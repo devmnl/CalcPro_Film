@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink } from 'lucide-react';
+import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download } from 'lucide-react';
 
 const MATERIALS = {
   BOPP: { 
@@ -36,6 +36,20 @@ function App() {
   const [result, setResult] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
 
   useEffect(() => {
     // Reset thickness when material changes if current thickness is not available
@@ -73,6 +87,15 @@ function App() {
     setWidth('');
     setWeight('');
     setResult(null);
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
   };
 
   return (
@@ -114,6 +137,20 @@ function App() {
             </div>
 
             <div className="space-y-6 flex-1">
+              {deferredPrompt && (
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-2">Instale o App</h3>
+                  <p className="text-xs text-blue-600 mb-3">Tenha acesso rápido e funcione offline.</p>
+                  <button 
+                    onClick={handleInstallClick}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
+                  >
+                    <Download size={18} />
+                    Instalar Agora
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Social</h3>
                 
