@@ -8,9 +8,17 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'inline',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       devOptions: {
         enabled: true
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
+        maximumFileSizeToCacheInBytes: 3000000 // Increase limit to 3MB for large logos
       },
       manifest: {
         name: 'CalcPro',
@@ -20,8 +28,9 @@ export default defineConfig({
         background_color: '#000000',
         display: 'standalone',
         scope: '/',
-        start_url: '/',
+        start_url: '.',
         orientation: 'portrait',
+        id: '/',
         icons: [
           {
             src: '/pwa-192x192.png',
