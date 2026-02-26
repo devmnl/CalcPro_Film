@@ -419,12 +419,12 @@ function App() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium opacity-80 mb-1 block">Peso Alvo (kg) <span className="text-[10px] font-normal opacity-70">(Opcional)</span></label>
+                    <label className="text-xs font-medium opacity-80 mb-1 block">Peso da Ordem (kg) <span className="text-[10px] font-normal opacity-70">(OP)</span></label>
                     <input
                       type="number"
                       value={targetWeight}
                       onChange={(e) => setTargetWeight(e.target.value)}
-                      placeholder="Ex: 50"
+                      placeholder="Ex: 150"
                       className="w-full bg-white text-blue-900 border border-white/10 rounded-lg py-2 px-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold"
                     />
                   </div>
@@ -437,67 +437,102 @@ function App() {
                     const mw = parseFloat(motherWidth);
                     const mkg = parseFloat(motherWeight);
                     const tw = parseFloat(targetWidth);
-                    const tkg = targetWeight ? parseFloat(targetWeight) : null;
+                    const tkg = targetWeight ? parseFloat(targetWeight) : 0;
+                    const thick = parseFloat(thickness);
+                    const dens = MATERIALS[material].density;
                     
                     if (!mw || !mkg || !tw) return <span className="text-xs opacity-50">Preencha os dados da bobina mãe e largura de corte</span>;
 
                     const numCuts = Math.floor(mw / tw);
-                    const waste = mw - (numCuts * tw);
-                    const weightPerCut = (mkg / mw) * tw;
+                    const waste = mw % tw;
+                    const isExact = waste === 0;
                     
-                    // Se tiver peso alvo, calcular quantos metros dá esse peso
-                    let calculatedLength = null;
-                    if (tkg) {
-                      // Usando a fórmula inversa: L = (Peso * 10^6) / (Largura * Espessura * Densidade)
-                      const d = MATERIALS[material].density;
-                      const t = parseFloat(thickness);
-                      calculatedLength = (tkg * 1000000) / (tw * t * d);
+                    // Cálculo Industrial
+                    // 1. Peso por metro da bobina filha (kg/m)
+                    // Fórmula: (Largura * Espessura * Densidade) / 1.000.000
+                    const weightPerMeterDaughter = (tw * thick * dens) / 1000000;
+
+                    // 2. Metros necessários para atingir o peso TOTAL da OP
+                    // Consideramos que todas as bobinas filhas (faixas) contribuem para o peso da OP
+                    // Peso Total por Metro = Peso Filha * Numero de Faixas
+                    
+                    let metersNeeded = 0;
+                    let motherConsumptionWeight = 0;
+                    let remainingMotherWeight = 0;
+                    let weightPerRoll = 0;
+                    
+                    if (tkg > 0 && numCuts > 0) {
+                      const totalWeightPerMeter = weightPerMeterDaughter * numCuts;
+                      metersNeeded = tkg / totalWeightPerMeter;
+                      weightPerRoll = tkg / numCuts;
+                      
+                      // Consumo da Mãe: Metros Necessários * Largura Mãe * Espessura * Densidade / 1e6
+                      motherConsumptionWeight = (metersNeeded * mw * thick * dens) / 1000000;
+                      remainingMotherWeight = mkg - motherConsumptionWeight;
                     }
 
                     return (
-                      <>
+                      <div className="space-y-3">
                         <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                          <span className="opacity-70">Quantidade de Bobinas:</span>
+                          <span className="opacity-70">Faixas (Bobinas):</span>
                           <span className="font-bold text-lg">{numCuts} bobinas</span>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="opacity-70">Largura de cada:</span>
-                          <span className="font-bold">{tw} mm</span>
+                          <span className="opacity-70">Sobra Lateral:</span>
+                          <span className={`font-bold ${isExact ? 'text-green-400' : 'text-red-400'}`}>
+                            {waste.toFixed(1)} mm {isExact ? '(Exato)' : ''}
+                          </span>
                         </div>
 
-                        {tkg ? (
+                        {tkg > 0 && numCuts > 0 && (
                           <>
-                             <div className="flex justify-between items-center">
-                              <span className="opacity-70">Peso Solicitado:</span>
-                              <span className="font-bold text-yellow-300">{tkg} kg</span>
+                            <div className="pt-2 border-t border-white/10 mt-2">
+                              <h4 className="text-xs font-bold text-blue-300 uppercase mb-2">Produção (Pedido)</h4>
+                              <div className="space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="opacity-70">Metragem a Rodar:</span>
+                                  <span className="font-bold text-white text-lg">{metersNeeded.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} m</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="opacity-70">Peso por Bobina:</span>
+                                  <span className="font-bold text-white">{weightPerRoll.toFixed(1)} kg</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="opacity-70">Peso Total OP:</span>
+                                  <span className="font-bold text-white">{tkg} kg</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="opacity-70">Metragem Resultante:</span>
-                              <span className="font-bold text-green-300">{calculatedLength.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} m</span>
-                            </div>
-                            <div className="text-[10px] opacity-50 text-right mt-1">*Baseado no peso alvo inserido</div>
-                          </>
-                        ) : (
-                          <div className="flex justify-between items-center">
-                            <span className="opacity-70">Peso Estimado (Full):</span>
-                            <span className="font-bold">{weightPerCut.toFixed(2)} kg</span>
-                          </div>
-                        )}
 
-                        {waste > 0 && (
-                          <div className="flex justify-between text-red-300 pt-2 border-t border-white/10 mt-1">
-                            <span className="opacity-70">Sobra Lateral (Apara):</span>
-                            <span className="font-bold">{waste.toFixed(1)} mm</span>
-                          </div>
+                            <div className="pt-2 border-t border-white/10 mt-2">
+                              <h4 className="text-xs font-bold text-orange-300 uppercase mb-2">Consumo Bobina Mãe</h4>
+                              <div className="space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="opacity-70">Peso Consumido:</span>
+                                  <span className="font-bold text-white">{motherConsumptionWeight.toFixed(1)} kg</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="opacity-70">Peso Restante:</span>
+                                  <span className={`font-bold ${remainingMotherWeight < 0 ? 'text-red-500' : 'text-green-400'}`}>
+                                    {remainingMotherWeight.toFixed(1)} kg
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </>
                         )}
-                      </>
+                      </div>
                     );
                   })()
                 ) : (
-                  <span className="text-xs opacity-50 text-center block">Preencha os campos acima para simular</span>
+                  <span className="text-xs opacity-50 text-center block py-2">
+                    Preencha largura da bobina mãe e do corte para ver o resultado
+                  </span>
                 )}
               </div>
+
+
             </div>
           )}
         </section>
