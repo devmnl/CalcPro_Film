@@ -55,12 +55,13 @@ function App() {
   const [targetWeight, setTargetWeight] = useState(''); // Peso desejado de cada bobina filha (opcional para cálculo reverso)
 
   // Derived properties
-  const currentDensity = subMaterial ? subMaterial.density : MATERIALS[material].density;
-  const currentMicrons = subMaterial ? subMaterial.microns : MATERIALS[material].microns;
-  const currentName = subMaterial ? `${MATERIALS[material].name} ${subMaterial.name}` : MATERIALS[material].name;
-  const currentColor = subMaterial ? subMaterial.color : MATERIALS[material].color;
-  const currentRing = subMaterial ? subMaterial.ring : MATERIALS[material].ring;
-  const currentFrom = subMaterial ? subMaterial.from : MATERIALS[material].from;
+  const matData = MATERIALS[material];
+  const currentDensity = subMaterial ? subMaterial.density : (matData?.density || 0);
+  const currentMicrons = subMaterial ? subMaterial.microns : (matData?.microns || []);
+  const currentName = subMaterial ? `${matData?.name} ${subMaterial.name}` : (matData?.name || '');
+  const currentColor = subMaterial ? subMaterial.color : (matData?.color || 'bg-gray-500');
+  const currentRing = subMaterial ? subMaterial.ring : (matData?.ring || 'ring-gray-500');
+  const currentFrom = subMaterial ? subMaterial.from : (matData?.from || 'from-gray-500');
 
   useEffect(() => {
     // Sync mother roll with main inputs when opening slitter for the first time
@@ -81,9 +82,10 @@ function App() {
     };
   }, []);
 
-  // Handle Material Change
-  useEffect(() => {
-    const mat = MATERIALS[material];
+  // Handle Material Change Logic
+  const handleMaterialChange = (key) => {
+    setMaterial(key);
+    const mat = MATERIALS[key];
     if (mat.types) {
       setSubMaterial(mat.types[0]);
       setThickness(mat.types[0].microns[0]);
@@ -91,7 +93,7 @@ function App() {
       setSubMaterial(null);
       setThickness(mat.microns[0]);
     }
-  }, [material]);
+  };
 
   // Handle SubMaterial Change
   // We don't need a useEffect for this because we set thickness directly in the click handler
@@ -308,7 +310,7 @@ function App() {
             {Object.keys(MATERIALS).map((key) => (
               <button
                 key={key}
-                onClick={() => setMaterial(key)}
+                onClick={() => handleMaterialChange(key)}
                 className={`py-3 px-1 rounded-xl text-sm font-bold transition-all duration-200 ${
                   material === key
                     ? 'bg-blue-600 text-white shadow-md transform scale-105'
