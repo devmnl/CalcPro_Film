@@ -4,33 +4,42 @@ import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Gi
 const MATERIALS = {
   BOPP: { 
     name: 'BOPP', 
-    density: 0.91, 
-    microns: [17, 20, 25, 30],
-    color: 'bg-blue-600'
+    types: [
+      { id: 'STANDARD', name: 'Standard', density: 0.91, microns: [17, 20, 25, 30], color: 'bg-blue-600', ring: 'ring-blue-600', from: 'from-blue-600' },
+      { id: 'PEROLA', name: 'Pérola', density: 0.70, microns: [19, 22, 26], color: 'bg-teal-600', ring: 'ring-teal-600', from: 'from-teal-600' },
+      { id: 'MATE', name: 'Mate', density: 0.91, microns: [20, 25, 30], color: 'bg-slate-600', ring: 'ring-slate-600', from: 'from-slate-600' }
+    ]
   },
   PET: { 
     name: 'PET', 
     density: 1.40, 
     microns: [12],
-    color: 'bg-indigo-600'
+    color: 'bg-indigo-600',
+    ring: 'ring-indigo-600',
+    from: 'from-indigo-600'
   },
   PE: { 
     name: 'PE', 
     density: 0.92, 
     microns: [20, 25, 30, 40, 50, 60, 80, 100],
-    color: 'bg-sky-600'
+    color: 'bg-sky-600',
+    ring: 'ring-sky-600',
+    from: 'from-sky-600'
   },
   PP: { 
     name: 'PP', 
     density: 0.90, 
     microns: [20, 25, 30, 35, 40],
-    color: 'bg-cyan-600'
+    color: 'bg-cyan-600',
+    ring: 'ring-cyan-600',
+    from: 'from-cyan-600'
   }
 };
 
 function App() {
   const [material, setMaterial] = useState('BOPP');
-  const [thickness, setThickness] = useState(MATERIALS['BOPP'].microns[0]);
+  const [subMaterial, setSubMaterial] = useState(MATERIALS['BOPP'].types[0]);
+  const [thickness, setThickness] = useState(MATERIALS['BOPP'].types[0].microns[0]);
   const [width, setWidth] = useState('');
   const [weight, setWeight] = useState('');
   const [result, setResult] = useState(null);
@@ -44,6 +53,14 @@ function App() {
   const [motherWeight, setMotherWeight] = useState('');
   const [targetWidth, setTargetWidth] = useState('');
   const [targetWeight, setTargetWeight] = useState(''); // Peso desejado de cada bobina filha (opcional para cálculo reverso)
+
+  // Derived properties
+  const currentDensity = subMaterial ? subMaterial.density : MATERIALS[material].density;
+  const currentMicrons = subMaterial ? subMaterial.microns : MATERIALS[material].microns;
+  const currentName = subMaterial ? `${MATERIALS[material].name} ${subMaterial.name}` : MATERIALS[material].name;
+  const currentColor = subMaterial ? subMaterial.color : MATERIALS[material].color;
+  const currentRing = subMaterial ? subMaterial.ring : MATERIALS[material].ring;
+  const currentFrom = subMaterial ? subMaterial.from : MATERIALS[material].from;
 
   useEffect(() => {
     // Sync mother roll with main inputs when opening slitter for the first time
@@ -64,16 +81,32 @@ function App() {
     };
   }, []);
 
+  // Handle Material Change
   useEffect(() => {
-    // Reset thickness when material changes if current thickness is not available
-    if (!MATERIALS[material].microns.includes(thickness)) {
-      setThickness(MATERIALS[material].microns[0]);
+    const mat = MATERIALS[material];
+    if (mat.types) {
+      setSubMaterial(mat.types[0]);
+      setThickness(mat.types[0].microns[0]);
+    } else {
+      setSubMaterial(null);
+      setThickness(mat.microns[0]);
     }
   }, [material]);
 
+  // Handle SubMaterial Change
+  // We don't need a useEffect for this because we set thickness directly in the click handler
+  // But if we wanted to be safe:
+  /*
+  useEffect(() => {
+    if (subMaterial && !subMaterial.microns.includes(thickness)) {
+      setThickness(subMaterial.microns[0]);
+    }
+  }, [subMaterial]);
+  */
+
   useEffect(() => {
     calculate();
-  }, [material, thickness, width, weight]);
+  }, [material, subMaterial, thickness, width, weight]);
 
   const calculate = () => {
     if (!width || !weight || !thickness) {
@@ -84,7 +117,7 @@ function App() {
     const w = parseFloat(width);
     const m = parseFloat(weight);
     const t = parseFloat(thickness);
-    const d = MATERIALS[material].density;
+    const d = currentDensity;
 
     if (isNaN(w) || isNaN(m) || isNaN(t) || w === 0 || m === 0 || t === 0) {
       setResult(null);
@@ -286,6 +319,31 @@ function App() {
               </button>
             ))}
           </div>
+          
+          {/* Sub Material Selection (Only for BOPP or others with types) */}
+          {MATERIALS[material].types && (
+            <div className="mt-4 pt-4 border-t border-gray-100 animate-in slide-in-from-top duration-300">
+              <h3 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">Tipo</h3>
+              <div className="flex flex-wrap gap-2">
+                {MATERIALS[material].types.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      setSubMaterial(type);
+                      setThickness(type.microns[0]);
+                    }}
+                    className={`py-2 px-4 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                      subMaterial && subMaterial.id === type.id
+                        ? `${type.color} text-white shadow-md ring-2 ring-offset-2 ${type.ring}`
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {type.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Thickness Selection */}
@@ -294,13 +352,13 @@ function App() {
             <Ruler size={16} className="rotate-90" /> Espessura (micras)
           </h2>
           <div className="flex flex-wrap gap-2">
-            {MATERIALS[material].microns.map((mic) => (
+            {currentMicrons.map((mic) => (
               <button
                 key={mic}
                 onClick={() => setThickness(mic)}
                 className={`py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                   thickness === mic
-                    ? 'bg-blue-600 text-white shadow-md'
+                    ? `${currentColor} text-white shadow-md`
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -351,7 +409,7 @@ function App() {
         </section>
 
         {/* Result Card */}
-        <section className={`rounded-2xl p-6 shadow-lg transition-all duration-300 transform ${result ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white scale-100 opacity-100' : 'bg-gray-200 text-gray-400 scale-95 opacity-50'}`}>
+        <section className={`rounded-2xl p-6 shadow-lg transition-all duration-300 transform ${result ? `bg-gradient-to-br ${currentFrom} to-gray-900 text-white scale-100 opacity-100` : 'bg-gray-200 text-gray-400 scale-95 opacity-50'}`}>
           <div className="flex justify-between items-start mb-2">
             <h2 className="text-sm font-medium uppercase tracking-wider opacity-80">Resultado Estimado</h2>
             {result && <Info size={16} className="opacity-60" />}
@@ -366,11 +424,11 @@ function App() {
             <div className="mt-4 pt-4 border-t border-white/20 text-sm opacity-80 grid grid-cols-2 gap-2">
               <div>
                 <span className="block text-xs uppercase">Material</span>
-                <span className="font-semibold">{material}</span>
+                <span className="font-semibold">{currentName}</span>
               </div>
               <div>
                 <span className="block text-xs uppercase">Densidade</span>
-                <span className="font-semibold">{MATERIALS[material].density} g/cm³</span>
+                <span className="font-semibold">{currentDensity} g/cm³</span>
               </div>
             </div>
           )}
@@ -453,7 +511,7 @@ function App() {
                     const tw = parseFloat(targetWidth);
                     const tkg = targetWeight ? parseFloat(targetWeight) : 0;
                     const thick = parseFloat(thickness);
-                    const dens = MATERIALS[material].density;
+                    const dens = currentDensity;
                     
                     if (!mw || !mkg || !tw) return <span className="text-xs opacity-50">Preencha os dados da bobina mãe e largura de corte</span>;
 
