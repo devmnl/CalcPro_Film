@@ -137,20 +137,6 @@ function App() {
             </div>
 
             <div className="space-y-6 flex-1">
-              {deferredPrompt && (
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                  <h3 className="text-sm font-semibold text-blue-800 mb-2">Instale o App</h3>
-                  <p className="text-xs text-blue-600 mb-3">Tenha acesso rápido e funcione offline.</p>
-                  <button 
-                    onClick={handleInstallClick}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
-                  >
-                    <Download size={18} />
-                    Instalar Agora
-                  </button>
-                </div>
-              )}
-
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Social</h3>
                 
@@ -177,6 +163,18 @@ function App() {
                   <span className="font-medium">GitHub</span>
                   <ExternalLink size={14} className="ml-auto opacity-50" />
                 </a>
+
+                {deferredPrompt && (
+                  <button 
+                    onClick={handleInstallClick}
+                    className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-lg group w-full text-left"
+                  >
+                    <div className="bg-blue-600 p-2 rounded-lg text-white group-hover:scale-110 transition-transform">
+                      <Download size={20} />
+                    </div>
+                    <span className="font-medium">Instalar App</span>
+                  </button>
+                )}
               </div>
 
               <div className="pt-6 border-t border-gray-100">
