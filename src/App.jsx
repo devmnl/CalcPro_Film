@@ -156,7 +156,21 @@ function App() {
 
             <div className="space-y-6 flex-1">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Social</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Parceiros</h3>
+                
+                <a href="https://www.toder.ind.br" target="_blank" rel="noreferrer" className="block bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-md transition-all group relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink size={16} className="text-blue-500" />
+                   </div>
+                   <div className="h-16 flex items-center justify-center p-2">
+                      <img src="/toderlogo.png" alt="Toder" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
+                   </div>
+                   <div className="text-center mt-2 border-t border-gray-100 pt-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Visitar Site</span>
+                   </div>
+                </a>
+
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-4">Social</h3>
                 
                 <a href="https://instagram.com/dev_mnl" target="_blank" rel="noreferrer" className="flex items-center gap-3 text-gray-700 hover:text-blue-600 transition-colors p-2 hover:bg-blue-50 rounded-lg group">
                   <div className="bg-gradient-to-tr from-yellow-400 to-purple-600 p-2 rounded-lg text-white group-hover:scale-110 transition-transform">
