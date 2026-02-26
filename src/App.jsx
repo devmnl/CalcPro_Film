@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download } from 'lucide-react';
+import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download, Scissors } from 'lucide-react';
 
 const MATERIALS = {
   BOPP: { 
@@ -37,6 +37,19 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  
+  // Slitter (Corte) State
+  const [showSlitter, setShowSlitter] = useState(false);
+  const [motherWidth, setMotherWidth] = useState('');
+  const [motherWeight, setMotherWeight] = useState('');
+  const [targetWidth, setTargetWidth] = useState('');
+  const [targetWeight, setTargetWeight] = useState(''); // Peso desejado de cada bobina filha (opcional para cálculo reverso)
+
+  useEffect(() => {
+    // Sync mother roll with main inputs when opening slitter for the first time
+    if (showSlitter && !motherWidth && width) setMotherWidth(width);
+    if (showSlitter && !motherWeight && weight) setMotherWeight(weight);
+  }, [showSlitter, width, weight]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
@@ -87,6 +100,11 @@ function App() {
     setWidth('');
     setWeight('');
     setResult(null);
+    setShowSlitter(false);
+    setMotherWidth('');
+    setMotherWeight('');
+    setTargetWidth('');
+    setTargetWeight('');
   };
 
   const handleInstallClick = async () => {
@@ -339,6 +357,146 @@ function App() {
               <div>
                 <span className="block text-xs uppercase">Densidade</span>
                 <span className="font-semibold">{MATERIALS[material].density} g/cm³</span>
+              </div>
+            </div>
+          )}
+
+          {/* Slitter Button */}
+          {result && (
+            <button
+              onClick={() => setShowSlitter(!showSlitter)}
+              className="mt-6 w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 border border-white/20"
+            >
+              <Scissors size={16} />
+              {showSlitter ? 'Ocultar Simulador de Corte' : 'Simular Corte (Slitter)'}
+            </button>
+          )}
+
+          {/* Slitter Section */}
+          {result && showSlitter && (
+            <div className="mt-4 bg-white/10 rounded-xl p-4 animate-in slide-in-from-top duration-300">
+              <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Scissors size={14} /> Simulador de Corte
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className="text-xs font-medium opacity-80 mb-1 block">Bobina Mãe (mm)</label>
+                  <input
+                    type="number"
+                    value={motherWidth}
+                    onChange={(e) => setMotherWidth(e.target.value)}
+                    placeholder={width || "Ex: 1400"}
+                    className="w-full bg-white/20 border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 font-bold"
+                  />
+                </div>
+                <div>
+                   <label className="text-xs font-medium opacity-80 mb-1 block">Peso Mãe (kg)</label>
+                  <input
+                    type="number"
+                    value={motherWeight}
+                    onChange={(e) => setMotherWeight(e.target.value)}
+                    placeholder={weight || "Ex: 1000"}
+                    className="w-full bg-white/20 border border-white/10 rounded-lg py-2 px-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-white/30 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="mb-4 pt-4 border-t border-white/10">
+                <div className="flex justify-between items-center mb-2">
+                   <label className="text-xs font-bold text-yellow-300 uppercase tracking-wider">Bobinas Filhas (Corte)</label>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium opacity-80 mb-1 block">Largura (mm)</label>
+                    <input
+                      type="number"
+                      value={targetWidth}
+                      onChange={(e) => setTargetWidth(e.target.value)}
+                      placeholder="Ex: 700"
+                      className="w-full bg-white text-blue-900 border border-white/10 rounded-lg py-2 px-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium opacity-80 mb-1 block">Peso Alvo (kg) <span className="text-[10px] font-normal opacity-70">(Opcional)</span></label>
+                    <input
+                      type="number"
+                      value={targetWeight}
+                      onChange={(e) => setTargetWeight(e.target.value)}
+                      placeholder="Ex: 50"
+                      className="w-full bg-white text-blue-900 border border-white/10 rounded-lg py-2 px-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-black/30 rounded-lg p-3 text-sm space-y-2">
+                {motherWidth && motherWeight && targetWidth ? (
+                  (() => {
+                    const mw = parseFloat(motherWidth);
+                    const mkg = parseFloat(motherWeight);
+                    const tw = parseFloat(targetWidth);
+                    const tkg = targetWeight ? parseFloat(targetWeight) : null;
+                    
+                    if (!mw || !mkg || !tw) return <span className="text-xs opacity-50">Preencha os dados da bobina mãe e largura de corte</span>;
+
+                    const numCuts = Math.floor(mw / tw);
+                    const waste = mw - (numCuts * tw);
+                    const weightPerCut = (mkg / mw) * tw;
+                    
+                    // Se tiver peso alvo, calcular quantos metros dá esse peso
+                    let calculatedLength = null;
+                    if (tkg) {
+                      // Usando a fórmula inversa: L = (Peso * 10^6) / (Largura * Espessura * Densidade)
+                      const d = MATERIALS[material].density;
+                      const t = parseFloat(thickness);
+                      calculatedLength = (tkg * 1000000) / (tw * t * d);
+                    }
+
+                    return (
+                      <>
+                        <div className="flex justify-between items-center pb-2 border-b border-white/10">
+                          <span className="opacity-70">Quantidade de Bobinas:</span>
+                          <span className="font-bold text-lg">{numCuts} bobinas</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="opacity-70">Largura de cada:</span>
+                          <span className="font-bold">{tw} mm</span>
+                        </div>
+
+                        {tkg ? (
+                          <>
+                             <div className="flex justify-between items-center">
+                              <span className="opacity-70">Peso Solicitado:</span>
+                              <span className="font-bold text-yellow-300">{tkg} kg</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="opacity-70">Metragem Resultante:</span>
+                              <span className="font-bold text-green-300">{calculatedLength.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} m</span>
+                            </div>
+                            <div className="text-[10px] opacity-50 text-right mt-1">*Baseado no peso alvo inserido</div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between items-center">
+                            <span className="opacity-70">Peso Estimado (Full):</span>
+                            <span className="font-bold">{weightPerCut.toFixed(2)} kg</span>
+                          </div>
+                        )}
+
+                        {waste > 0 && (
+                          <div className="flex justify-between text-red-300 pt-2 border-t border-white/10 mt-1">
+                            <span className="opacity-70">Sobra Lateral (Apara):</span>
+                            <span className="font-bold">{waste.toFixed(1)} mm</span>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()
+                ) : (
+                  <span className="text-xs opacity-50 text-center block">Preencha os campos acima para simular</span>
+                )}
               </div>
             </div>
           )}
