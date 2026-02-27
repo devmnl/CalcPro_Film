@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download, Scissors } from 'lucide-react';
+import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download, Scissors, Printer } from 'lucide-react';
 
 const MATERIALS = {
   BOPP: { 
@@ -53,6 +53,7 @@ function App() {
   const [motherWeight, setMotherWeight] = useState('');
   const [targetWidth, setTargetWidth] = useState('');
   const [targetWeight, setTargetWeight] = useState(''); // Peso desejado de cada bobina filha (opcional para cálculo reverso)
+  const [clientName, setClientName] = useState(''); // Cliente para impressão
 
   // Derived properties
   const matData = MATERIALS[material];
@@ -152,7 +153,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
+    <>
+    <div className="print:hidden min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
       {/* Header */}
       <header className="bg-black text-white py-1 px-4 shadow-lg sticky top-0 z-10">
         <div className="flex justify-between items-center max-w-md mx-auto">
@@ -503,6 +505,18 @@ function App() {
                     />
                   </div>
                 </div>
+
+                {/* Client Input */}
+                <div className="mt-3">
+                    <label className="text-xs font-medium opacity-80 mb-1 block">Cliente</label>
+                    <input
+                      type="text"
+                      value={clientName}
+                      onChange={(e) => setClientName(e.target.value)}
+                      placeholder="Nome do Cliente"
+                      className="w-full bg-white text-blue-900 border border-white/10 rounded-lg py-2 px-3 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 font-bold uppercase"
+                    />
+                </div>
               </div>
 
               <div className="bg-black/30 rounded-lg p-3 text-sm space-y-2">
@@ -606,6 +620,15 @@ function App() {
                 )}
               </div>
 
+              {/* Print Button */}
+              <button
+                onClick={() => window.print()}
+                className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <Printer size={20} />
+                Imprimir Ordem de Corte
+              </button>
+
 
             </div>
           )}
@@ -632,6 +655,89 @@ function App() {
         </div>
       </footer>
     </div>
+    
+    {/* Print View Component */}
+    <div className="hidden print:flex flex-col items-center justify-between h-screen w-full bg-white text-black p-4">
+       {/* Logo */}
+       <div className="mb-4">
+         <img src="/toderlogo.png" alt="Toder" className="h-20 object-contain" />
+       </div>
+       
+       {/* Content */}
+       <div className="w-full max-w-5xl flex-1 flex flex-col justify-center items-center text-center">
+         
+         {/* Header Info */}
+         <div className="border-b-4 border-black pb-4 mb-6 w-full">
+           <h1 className="text-4xl font-black uppercase tracking-tight">
+             RACHAR {material} {motherWidth} X {thickness}
+           </h1>
+         </div>
+
+         {/* Cutting Plan */}
+         <div className="py-4">
+           {(() => {
+             // Re-calculate for print view
+             const mw = parseFloat(motherWidth);
+             const tw = parseFloat(targetWidth);
+             if (!mw || !tw) return null;
+             const numCuts = Math.floor(mw / tw);
+             const waste = mw % tw;
+             return (
+               <div className="space-y-2">
+                  <div className="text-5xl font-black mb-2">
+                    {numCuts} PISTAS {targetWidth}mm
+                  </div>
+                  {waste > 0 && (
+                    <div className="text-xl font-bold opacity-60">
+                      + Sobra de {waste.toFixed(0)}mm
+                    </div>
+                  )}
+               </div>
+             );
+           })()}
+         </div>
+
+         {/* Meters Instruction */}
+         <div className="py-6">
+           {(() => {
+             const mw = parseFloat(motherWidth);
+             const tw = parseFloat(targetWidth);
+             const tkg = parseFloat(targetWeight);
+             const thick = parseFloat(thickness);
+             const dens = currentDensity; // accessed from closure
+             
+             if (!mw || !tw || !tkg) return null;
+             
+             const numCuts = Math.floor(mw / tw);
+             const weightPerMeterDaughter = (tw * thick * dens) / 1000000;
+             const totalWeightPerMeter = weightPerMeterDaughter * numCuts;
+             const metersNeeded = tkg / totalWeightPerMeter;
+             
+             return (
+               <div className="text-4xl font-bold bg-black text-white inline-block px-8 py-4 rounded-xl border-4 border-black">
+                 RACHAR {metersNeeded.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} M
+               </div>
+             );
+           })()}
+         </div>
+
+         {/* Footer Info */}
+         <div className="border-t-4 border-black pt-8 mt-8 text-left w-full pl-8">
+           <div className="grid grid-cols-1 gap-8">
+              <div className="text-3xl font-bold flex items-baseline gap-4">
+                <span className="opacity-60 text-xl uppercase min-w-[250px]">Peso Solicitado na OP:</span>
+                <span className="border-b-2 border-black border-dashed flex-1 pl-4">{targetWeight} KG</span>
+              </div>
+              <div className="text-3xl font-bold flex items-baseline gap-4">
+                <span className="opacity-60 text-xl uppercase min-w-[250px]">Cliente:</span>
+                <span className="border-b-2 border-black border-dashed flex-1 pl-4">{clientName || ''}</span>
+              </div>
+           </div>
+         </div>
+         
+       </div>
+    </div>
+  </>
   );
 }
 
