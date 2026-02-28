@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download, Scissors, Printer } from 'lucide-react';
+import { Calculator, Ruler, Weight, Layers, Trash2, Info, Menu, X, Instagram, Github, Phone, ExternalLink, Download, Scissors, Printer, History, Save } from 'lucide-react';
 
 const MATERIALS = {
   BOPP: { 
@@ -55,6 +55,17 @@ function App() {
   const [targetWidth, setTargetWidth] = useState('');
   const [targetWeight, setTargetWeight] = useState(''); // Peso desejado de cada bobina filha (opcional para cálculo reverso)
   const [clientName, setClientName] = useState(''); // Cliente para impressão
+  
+  // History State
+  const [history, setHistory] = useState(() => {
+    const saved = localStorage.getItem('calcpro_history');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showHistory, setShowHistory] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('calcpro_history', JSON.stringify(history));
+  }, [history]);
 
   // Derived properties
   const matData = MATERIALS[material];
@@ -144,6 +155,53 @@ function App() {
     setTargetWeight('');
   };
 
+  const handleSaveHistory = () => {
+    const mw = parseFloat(motherWidth);
+    const mkg = parseFloat(motherWeight);
+    const tw = parseFloat(targetWidth);
+    const tkg = targetWeight ? parseFloat(targetWeight) : 0;
+    const thick = parseFloat(thickness);
+    const dens = currentDensity;
+
+    if (!mw || !mkg || !tw) return;
+
+    // Recalculate basics
+    const numCuts = Math.floor(mw / tw);
+    const waste = mw % tw;
+    
+    // Industrial Calc
+    const weightPerMeterDaughter = (tw * thick * dens) / 1000000;
+    
+    let metersNeeded = 0;
+    
+    if (tkg > 0 && numCuts > 0) {
+      const totalWeightPerMeter = weightPerMeterDaughter * numCuts;
+      metersNeeded = tkg / totalWeightPerMeter;
+    }
+
+    const newItem = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      material: currentName,
+      thickness,
+      motherWidth,
+      targetWidth,
+      targetWeight,
+      client: clientName,
+      meters: metersNeeded,
+      cuts: numCuts
+    };
+
+    setHistory(prev => [newItem, ...prev]);
+    // Feedback handled by UI or simple alert
+    alert('Cálculo salvo no histórico!');
+  };
+
+  const deleteHistoryItem = (id) => {
+    setHistory(prev => prev.filter(item => item.id !== id));
+  };
+
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -194,19 +252,22 @@ function App() {
 
             <div className="space-y-6 flex-1">
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Parceiros</h3>
-                
-                <a href="https://www.toder.ind.br" target="_blank" rel="noreferrer" className="block bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-md transition-all group relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-2 opacity-50 group-hover:opacity-100 transition-opacity">
-                      <ExternalLink size={16} className="text-blue-500" />
-                   </div>
-                   <div className="h-16 flex items-center justify-center p-2">
-                      <img src="/toderlogo.png" alt="Toder" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
-                   </div>
-                   <div className="text-center mt-2 border-t border-gray-100 pt-2">
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Visitar Site</span>
-                   </div>
-                </a>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Geral</h3>
+
+                <button 
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    setShowHistory(true);
+                  }}
+                  className="flex items-center gap-3 text-gray-700 w-full hover:bg-gray-50 p-2 rounded-lg transition-colors group"
+                >
+                  <div className="bg-purple-100 p-2 rounded-lg text-purple-600 group-hover:scale-110 transition-transform">
+                    <History size={20} />
+                  </div>
+                  <span className="font-medium">Histórico de Cortes</span>
+                </button>
+
+
 
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-4">Social</h3>
                 
@@ -245,6 +306,20 @@ function App() {
                     <span className="font-medium">Instalar App</span>
                   </button>
                 )}
+
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-4">Parceiros</h3>
+                
+                <a href="https://www.toder.ind.br" target="_blank" rel="noreferrer" className="block bg-white border border-gray-200 rounded-xl p-4 hover:border-blue-400 hover:shadow-md transition-all group relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink size={16} className="text-blue-500" />
+                   </div>
+                   <div className="h-16 flex items-center justify-center p-2">
+                      <img src="/toderlogo.png" alt="Toder" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform duration-300" />
+                   </div>
+                   <div className="text-center mt-2 border-t border-gray-100 pt-2">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest group-hover:text-blue-600 transition-colors">Visitar Site</span>
+                   </div>
+                </a>
               </div>
 
               <div className="pt-6 border-t border-gray-100">
@@ -265,6 +340,96 @@ function App() {
               <p>CalcPro v1.0.0</p>
               <p>© 2024 CalcPro Film</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowHistory(false)}
+          />
+          <div className="relative bg-white rounded-2xl p-6 w-full max-w-md h-[80vh] flex flex-col shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <History className="text-purple-600" />
+                Histórico de Cortes
+              </h2>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+              {history.length === 0 ? (
+                <div className="text-center text-gray-400 py-10">
+                  <History size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>Nenhum cálculo salvo ainda.</p>
+                </div>
+              ) : (
+                history.map((item) => (
+                  <div key={item.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 relative group">
+                    <button 
+                      onClick={() => deleteHistoryItem(item.id)}
+                      className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    
+                    <div className="pr-8">
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="font-bold text-gray-900">{item.material} {item.thickness}µ</span>
+                        <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      
+                      {item.client && (
+                         <div className="text-xs font-bold text-blue-600 uppercase mb-2">
+                           {item.client}
+                         </div>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600">
+                        <div>
+                          <span className="text-xs text-gray-400 block">Mãe</span>
+                          {item.motherWidth}mm
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-400 block">Corte</span>
+                          {item.targetWidth}mm ({item.cuts}x)
+                        </div>
+                        {item.targetWeight > 0 && (
+                          <div className="col-span-2 mt-1 pt-1 border-t border-gray-200 flex justify-between">
+                            <span>OP: {item.targetWeight}kg</span>
+                            <span className="font-bold text-gray-900">{item.meters ? Math.round(item.meters).toLocaleString('pt-BR') : 0} m</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {history.length > 0 && (
+              <div className="pt-4 mt-4 border-t border-gray-100">
+                <button 
+                  onClick={() => {
+                    if(window.confirm('Tem certeza que deseja limpar todo o histórico?')) {
+                      setHistory([]);
+                    }
+                  }}
+                  className="w-full py-3 text-red-500 font-semibold hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={18} />
+                  Limpar Histórico
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -621,14 +786,23 @@ function App() {
                 )}
               </div>
 
-              {/* Print Button */}
-              <button
-                onClick={() => window.print()}
-                className="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
-              >
-                <Printer size={20} />
-                Imprimir Ordem de Corte
-              </button>
+              {/* Print and Save Buttons */}
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <button
+                  onClick={handleSaveHistory}
+                  className="py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Save size={20} />
+                  Salvar
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <Printer size={20} />
+                  Imprimir
+                </button>
+              </div>
 
 
             </div>
