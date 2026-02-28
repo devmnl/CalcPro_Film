@@ -5,9 +5,10 @@ const MATERIALS = {
   BOPP: { 
     name: 'BOPP', 
     types: [
-      { id: 'STANDARD', name: 'Standard', density: 0.91, microns: [17, 20, 25, 30], color: 'bg-blue-600', ring: 'ring-blue-600', from: 'from-blue-600' },
+      { id: 'STANDARD', name: 'CS', density: 0.91, microns: [17, 20, 25, 30], color: 'bg-blue-600', ring: 'ring-blue-600', from: 'from-blue-600' },
       { id: 'PEROLA', name: 'Pérola', density: 0.70, microns: [19, 22, 26], color: 'bg-teal-600', ring: 'ring-teal-600', from: 'from-teal-600' },
-      { id: 'MATE', name: 'Mate', density: 0.91, microns: [20, 25, 30], color: 'bg-slate-600', ring: 'ring-slate-600', from: 'from-slate-600' }
+      { id: 'MATE', name: 'Mate', density: 0.91, microns: [20, 25, 30], color: 'bg-slate-600', ring: 'ring-slate-600', from: 'from-slate-600' },
+      { id: 'METAL', name: 'Metal', density: 0.91, microns: [20, 30], color: 'bg-gray-500', ring: 'ring-gray-500', from: 'from-gray-500' }
     ]
   },
   PET: { 
@@ -669,7 +670,7 @@ function App() {
          {/* Header Info */}
          <div className="border-b-4 border-black pb-4 mb-6 w-full">
            <h1 className="text-4xl font-black uppercase tracking-tight">
-             RACHAR {material} {motherWidth} X {thickness}
+             RACHAR {currentName} {motherWidth} X {thickness}
            </h1>
          </div>
 
