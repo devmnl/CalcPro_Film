@@ -215,14 +215,15 @@ function App() {
     <>
     <div className="print:hidden min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
       {/* Header */}
-      <header className="bg-black text-white py-1 px-4 shadow-lg sticky top-0 z-10">
-        <div className="flex justify-between items-center max-w-md mx-auto">
-          <div className="flex items-center">
-            <img src="/logoheader.png" alt="CalcPro Logo" className="h-28 w-auto object-contain" />
+      <header className="bg-black text-white h-16 shadow-lg sticky top-0 z-30">
+        <div className="flex justify-between items-center max-w-md mx-auto h-full px-4 relative">
+          <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 z-40">
+            <img src="/logoheader.png" alt="CalcPro Logo" className="h-28 w-auto object-contain drop-shadow-lg" />
           </div>
+          <div className="flex-1"></div>
           <button 
             onClick={() => setIsMenuOpen(true)}
-            className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-800 rounded-full transition-colors relative z-50"
           >
             <Menu size={24} />
           </button>
@@ -821,9 +822,9 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-black text-white py-4 mt-auto">
+      <footer className="bg-black text-white py-6 mt-auto">
         <div className="max-w-md mx-auto px-4 text-center">
-          <div className="flex justify-center mb-2">
+          <div className="flex justify-center mb-4">
             <img src="/logo_calcpro.png" alt="CalcPro Logo" className="h-48 w-auto object-contain opacity-90" />
           </div>
           <p className="text-gray-600 text-xs">© {new Date().getFullYear()} CalcPro. Todos os direitos reservados.</p>
